@@ -98,15 +98,18 @@ export default class extends Client {
             msg.channel.send(new RichEmbed().setColor('#1ece00').setDescription(`**${msg.author.tag}** :ping_pong: ${this.ping}ms`));
         }
         else if(msg.content.startsWith('...ignore')) {
-            msg.channel.send(new RichEmbed().setColor('#9676ef').setDescription(`Ignorowanie Nitro Classic jest **${this.ignoreClassic ? 'włączone' : 'wyłączone'}**`));
+            msg.channel.send(new RichEmbed().setColor('#9676ef').setDescription(`Ignorowanie Nitro Classic (i śmieci) jest **${this.ignoreClassic ? 'włączone' : 'wyłączone'}**`));
         }
     }
 
     private async redeemCode(code: string) {
         try {
-            if(this.ignoreClassic && (await this.getGiftCreatorInfo(code)).store_listing.sku.name == "Nitro Classic") {
-                this.logChannel.send(new RichEmbed().setColor('#9676ef').setDescription(`**Zignorowano Nitro Classic.**\n${code}`));
-                return;
+            if(this.ignoreClassic) {
+                let info = (await this.getGiftCreatorInfo(code))?.store_listing?.sku?.name;
+                if(!info || info == "Nitro Classic") {
+                    this.logChannel.send(new RichEmbed().setColor('#9676ef').setDescription(`**Zignorowano ${info ? "Nitro Classic" : "śmiecia"}.**\n${code}`));
+                    return;
+                }
             }
 
             let rq = https.request({
