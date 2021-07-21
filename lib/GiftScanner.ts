@@ -5,19 +5,25 @@ interface GifterInfo {
     id: string
     username: string
     avatar: string
-    discriminator: string
+    discriminator: string,
+    store_listing: {
+        sku: {
+            name: string
+        }
+    }
 }
 
 export default class extends Client {
     private readonly logId: string;
     private readonly logGuildId: string;
     private readonly redeemToken: string;
+    private ignoreClassic: boolean;
     private logChannel: TextChannel;
     private sharedUsedList: string[];
     private lastMessage: Message;
     private readonly giftRegex = /discord\.gift\/([\d\w]{1,19})(?: |$)/im;
 
-    constructor(token: string, rToken: string, logId: string, logGuildId: string, uList: string[]) {
+    constructor(token: string, rToken: string, logId: string, logGuildId: string, ignore: number, uList: string[]) {
         super();
         ///@ts-ignore
         const orgF = this.dataManager.newChannel;
@@ -27,6 +33,7 @@ export default class extends Client {
         this.redeemToken = rToken;
         this.logId = logId;
         this.logGuildId = logGuildId;
+        this.ignoreClassic = Boolean(ignore);
         this.sharedUsedList = uList;
         this.start();
     }
@@ -40,6 +47,7 @@ export default class extends Client {
     private onReady() {
         console.log(`Zalogowano jako ${this.user.tag}`);
         this.logChannel = this.channels.get(this.logId) as TextChannel;
+        this.logChannel.send(new RichEmbed().setColor('#1ece00').setDescription(`Zalogowano`));
     }
 
     private async onMessage(msg: Message) {
@@ -89,10 +97,18 @@ export default class extends Client {
         else if(msg.content.startsWith('...ping')) {
             msg.channel.send(new RichEmbed().setColor('#1ece00').setDescription(`**${msg.author.tag}** :ping_pong: ${this.ping}ms`));
         }
+        else if(msg.content.startsWith('...ignore')) {
+            msg.channel.send(new RichEmbed().setColor('#9676ef').setDescription(`Ignorowanie Nitro Classic jest **${this.ignoreClassic ? 'włączone' : 'wyłączone'}**`));
+        }
     }
 
     private async redeemCode(code: string) {
         try {
+            if(this.ignoreClassic && (await this.getGiftCreatorInfo(code)).store_listing.sku.name == "Nitro Classic") {
+                this.logChannel.send(new RichEmbed().setColor('#9676ef').setDescription(`**Zignorowano Nitro Classic.**\n${code}`));
+                return;
+            }
+
             let rq = https.request({
                 hostname: 'discordapp.com',
                 port: 443,
