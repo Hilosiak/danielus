@@ -1,11 +1,13 @@
 import { Client, TextChannel, Message, RichEmbed } from "discord.js";
 import https from 'https';
 
-interface GifterInfo {
-    id: string
-    username: string
-    avatar: string
-    discriminator: string,
+interface GiftInfo {
+    user: {
+        id: string
+        username: string
+        avatar: string
+        discriminator: string
+    }
     store_listing: {
         sku: {
             name: string
@@ -128,7 +130,7 @@ export default class extends Client {
                     this.logChannel.send(`kod: **${code}**`);
                     let gift = JSON.parse(body);
                     if(gift.code == 50050) {
-                        let gifter = await this.getGiftCreatorInfo(code);
+                        let gifter = (await this.getGiftCreatorInfo(code)).user;
                         this.logChannel.send(`gifter: **@${gifter.username}#${gifter.discriminator}**`);
                     }
                     this.logChannel.send("Wynik próby odebrania prezentu:\n\n" + JSON.stringify(gift, null, 2), {code: 'json', split: true});
@@ -149,13 +151,13 @@ export default class extends Client {
         }
     }
 
-    private getGiftCreatorInfo(code: string): Promise<GifterInfo> {
+    private getGiftCreatorInfo(code: string): Promise<GiftInfo> {
         return new Promise(res => {
             https.get(`https://discordapp.com/api/v6/entitlements/gift-codes/${code}`, resp => {
                 let body = '';
                 resp.on('data', d => body += d);
                 resp.on('end', () => {
-                    res(JSON.parse(body).user);
+                    res(JSON.parse(body));
                 });
             });
         });
