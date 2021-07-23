@@ -1,5 +1,6 @@
-import { Client, TextChannel, Message, RichEmbed } from "discord.js";
+import { Client, TextChannel, Message, RichEmbed, Guild } from "discord.js";
 import https from 'https';
+import crypto from 'crypto';
 
 interface GiftInfo {
     user: {
@@ -15,17 +16,19 @@ interface GiftInfo {
     }
 }
 
-export default class extends Client {
+export default class Scanner extends Client {
+    public readonly id = crypto.randomBytes(16).toString("hex");
     private readonly logId: string;
     private readonly logGuildId: string;
     private readonly redeemToken: string;
     private ignoreClassic: boolean;
+    private scanners: Scanner[];
     private logChannel: TextChannel;
     private sharedUsedList: string[];
     private lastMessage: Message;
     private readonly giftRegex = /discord\.gift\/([\d\w]{1,19})(?: |$)/im;
 
-    constructor(token: string, rToken: string, logId: string, logGuildId: string, ignore: number, uList: string[]) {
+    constructor(token: string, rToken: string, logId: string, logGuildId: string, ignore: number, uList: string[], scanners: Scanner[]) {
         super();
         ///@ts-ignore
         const orgF = this.dataManager.newChannel;
@@ -37,6 +40,7 @@ export default class extends Client {
         this.logGuildId = logGuildId;
         this.ignoreClassic = Boolean(ignore);
         this.sharedUsedList = uList;
+        this.scanners = scanners;
         this.start();
     }
 
@@ -44,6 +48,7 @@ export default class extends Client {
         super.login(this.token);
         this.on('ready', () => this.onReady());
         this.on('message', msg => this.onMessage(msg));
+        this.on('guildCreate', g => this.checkDupeGuild(g));
     }
 
     private onReady() {
@@ -51,6 +56,21 @@ export default class extends Client {
         this.logChannel = this.channels.get(this.logId) as TextChannel;
         this.logChannel.send(new RichEmbed().setColor('#1ece00').setDescription(`Zalogowano`));
     }
+
+    public async getGuilds() {
+        while(!this.readyAt)
+            await new Promise(r => setTimeout(r, 100));
+            
+        return this.guilds.array();
+    }
+
+    private async checkDupeGuild(guild: Guild) {
+        for(let s of this.scanners.filter(s => s.id != this.id))
+            if((await s.getGuilds()).map(g => g.id).includes(guild.id)) {
+                this.logChannel.send(new RichEmbed().setColor('#e30207').setDescription(`Na serwerze **${guild.name}** znajdują się już inni szpiedzy.\nOpuściłxm ten serwer.`));
+                guild.leave();
+            }
+    } 
 
     private async onMessage(msg: Message) {
         if(msg.guild?.id == this.logGuildId) {
