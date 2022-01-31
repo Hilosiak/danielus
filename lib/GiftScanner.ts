@@ -1,4 +1,4 @@
-import { Client, TextChannel, Message, RichEmbed, Guild } from "discord.js";
+import { Client, TextChannel, Message, Guild } from "discord.js";
 import https from 'https';
 import crypto from 'crypto';
 
@@ -54,7 +54,7 @@ export default class Scanner extends Client {
     private onReady() {
         console.log(`Zalogowano jako ${this.user.tag}`);
         this.logChannel = this.channels.get(this.logId) as TextChannel;
-        this.logChannel.send(new RichEmbed().setColor('#1ece00').setDescription(`Zalogowano`));
+        this.user.setActivity(new Date().toUTCString());
     }
 
     public async getGuilds() {
@@ -67,7 +67,7 @@ export default class Scanner extends Client {
     private async checkDupeGuild(guild: Guild) {
         for(let s of this.scanners.filter(s => s.id != this.id))
             if((await s.getGuilds()).map(g => g.id).includes(guild.id)) {
-                this.logChannel.send(new RichEmbed().setColor('#e30207').setDescription(`Na serwerze **${guild.name}** znajdują się już inni szpiedzy.\nOpuściłxm ten serwer.`));
+                this.logChannel.send(`❌ Na serwerze **${guild.name}** znajdują się już inni szpiedzy.\nOpuściłxm ten serwer.`);
                 guild.leave();
             }
     } 
@@ -110,17 +110,21 @@ export default class Scanner extends Client {
 
     private handleCommands(msg: Message) {
         if(msg.content.startsWith('...stats')) {
-            let emb = new RichEmbed().setColor('#9676ef').setAuthor('Statystyki')
-            .addField('Serwery', this.guilds.size, true).addField('Kanały', this.channels.size, true)
-            .addField('W filtrze', this.sharedUsedList.length, true)
-            .addField('Ost. Wiad.', `**${this.lastMessage.author.tag}** w **${this.lastMessage?.guild.name || 'DM'}**\n` + this.lastMessage?.content?.slice(0, 1000));
-            msg.channel.send(emb);
+            msg.channel.send(`__**Statystyki:**__
+            
+**Serwery:** ${this.guilds.size}
+**Kanały:** ${this.channels.size}
+**W filtrze:** ${this.sharedUsedList.length}
+**Ost. wiad.:**
+**${this.lastMessage.author.tag}** w **${this.lastMessage?.guild.name || 'DM'}**
+${this.lastMessage?.cleanContent?.slice(0, 1000)}`
+            );
         }
         else if(msg.content.startsWith('...ping')) {
-            msg.channel.send(new RichEmbed().setColor('#1ece00').setDescription(`**${msg.author.tag}** :ping_pong: ${this.ping}ms`));
+            msg.channel.send(`✅ **${msg.author.tag}** :ping_pong: ${this.ping}ms`);
         }
         else if(msg.content.startsWith('...ignore')) {
-            msg.channel.send(new RichEmbed().setColor('#9676ef').setDescription(`Ignorowanie Nitro Classic (i śmieci) jest **${this.ignoreClassic ? 'włączone' : 'wyłączone'}**`));
+            msg.channel.send(`Ignorowanie Nitro Classic (i śmieci) jest **${this.ignoreClassic ? 'włączone' : 'wyłączone'}**`);
         }
     }
 
@@ -129,7 +133,7 @@ export default class Scanner extends Client {
             if(this.ignoreClassic) {
                 let info = (await this.getGiftCreatorInfo(code))?.store_listing?.sku?.name;
                 if(!info || info == "Nitro Classic") {
-                    this.logChannel.send(new RichEmbed().setColor('#9676ef').setDescription(`**Zignorowano ${info ? "Nitro Classic" : "śmiecia"}.**\n${code}`));
+                    this.logChannel.send(`**Zignorowano ${info ? "Nitro Classic" : "śmiecia"}.**\n${code}`);
                     return;
                 }
             }
@@ -167,7 +171,7 @@ export default class Scanner extends Client {
         }
         catch(err) {
             console.error(err);
-            this.logChannel.send(`Request error:\n\n` + err.message);
+            this.logChannel.send(`Request error:\n\n` + err);
         }
     }
 
