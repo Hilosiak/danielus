@@ -18,7 +18,6 @@
     "bufferutil": "^4.0.1",
     "discord.js": "^11.6.4",
     "dotenv": "^8.2.0",
-    "erlpack": "github:discord/erlpack",
     "typescript": "^3.9.5",
     "utf-8-validate": "^5.0.2",
     "zlib-sync": "^0.1.7"
