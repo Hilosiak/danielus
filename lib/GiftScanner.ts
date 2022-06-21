@@ -34,6 +34,10 @@ export default class Scanner extends Client {
         const orgF = this.dataManager.newChannel;
         ///@ts-ignore
         this.dataManager.newChannel = (d, g) => [0,1,2,3,4,5,6].includes(d.type) && orgF.call(this.dataManager, d, g);
+        ///@ts-ignore
+        const orgA = this.actions.MessageCreate.handle;
+        ///@ts-ignore
+        this.actions.MessageCreate.handle = data => this.channels.get(data.channel_id).type != "voice" && orgA.call(this.actions.MessageCreate, data);
         this.token = token;
         this.redeemToken = rToken;
         this.logId = logId;
