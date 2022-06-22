@@ -1,4 +1,3 @@
-import { Guild } from 'discord.js';
 import Scanner from './GiftScanner';
 require('dotenv').config();
 

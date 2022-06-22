@@ -94,4 +94,6 @@ typings/
 # database excluding
 *.db
 
+.vscode/
+
 build/

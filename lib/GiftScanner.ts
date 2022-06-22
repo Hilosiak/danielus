@@ -1,4 +1,4 @@
-import { Client, TextChannel, Message, Guild } from "discord.js";
+import { Client, TextChannel, Message, Guild, Formatters } from "discord.js-selfbot-v13";
 import https from 'https';
 import crypto from 'crypto';
 
@@ -30,14 +30,6 @@ export default class Scanner extends Client {
 
     constructor(token: string, rToken: string, logId: string, logGuildId: string, ignore: number, uList: string[], scanners: Scanner[]) {
         super();
-        ///@ts-ignore
-        const orgF = this.dataManager.newChannel;
-        ///@ts-ignore
-        this.dataManager.newChannel = (d, g) => [0,1,2,3,4,5,6].includes(d.type) && orgF.call(this.dataManager, d, g);
-        ///@ts-ignore
-        const orgA = this.actions.MessageCreate.handle;
-        ///@ts-ignore
-        this.actions.MessageCreate.handle = data => this.channels.get(data.channel_id).type != "voice" && orgA.call(this.actions.MessageCreate, data);
         this.token = token;
         this.redeemToken = rToken;
         this.logId = logId;
@@ -51,13 +43,13 @@ export default class Scanner extends Client {
     private start() {
         super.login(this.token);
         this.on('ready', () => this.onReady());
-        this.on('message', msg => this.onMessage(msg));
+        this.on('messageCreate', msg => this.onMessage(msg));
         this.on('guildCreate', g => this.checkDupeGuild(g));
     }
 
     private onReady() {
         console.log(`Zalogowano jako ${this.user.tag}`);
-        this.logChannel = this.channels.get(this.logId) as TextChannel;
+        this.logChannel = this.channels.resolve(this.logId) as TextChannel;
         this.user.setActivity(new Date().toUTCString());
     }
 
@@ -65,7 +57,7 @@ export default class Scanner extends Client {
         while(!this.readyAt)
             await new Promise(r => setTimeout(r, 100));
             
-        return this.guilds.array();
+        return [...this.guilds.cache.values()];
     }
 
     private async checkDupeGuild(guild: Guild) {
@@ -108,7 +100,7 @@ export default class Scanner extends Client {
             }
             
             this.logChannel.send(msg.content?.replace(/@everyone/g, '')?.replace(/@here/g, ''));
-            this.logChannel.send(`od: **@${msg.author.tag}**\nw **#${(msg.channel as TextChannel)?.name || 'DM'}**\nna **${msg.guild?.name || 'DM'}**\nping **${this.ping} ms**`);
+            this.logChannel.send(`od: **@${msg.author.tag}**\nw **#${(msg.channel as TextChannel)?.name || 'DM'}**\nna **${msg.guild?.name || 'DM'}**\nping **${this.ws.ping} ms**`);
         }
     }
 
@@ -116,8 +108,8 @@ export default class Scanner extends Client {
         if(msg.content.startsWith('...stats')) {
             msg.channel.send(`__**Statystyki:**__
             
-**Serwery:** ${this.guilds.size}
-**Kanały:** ${this.channels.size}
+**Serwery:** ${this.guilds.cache.size}
+**Kanały:** ${this.channels.cache.size}
 **W filtrze:** ${this.sharedUsedList.length}
 **Ost. wiad.:**
 **${this.lastMessage.author.tag}** w **${this.lastMessage?.guild.name || 'DM'}**
@@ -125,7 +117,7 @@ ${this.lastMessage?.cleanContent?.slice(0, 1000)}`
             );
         }
         else if(msg.content.startsWith('...ping')) {
-            msg.channel.send(`✅ **${msg.author.tag}** :ping_pong: ${this.ping}ms`);
+            msg.channel.send(`✅ **${msg.author.tag}** :ping_pong: ${this.ws.ping}ms`);
         }
         else if(msg.content.startsWith('...ignore')) {
             msg.channel.send(`Ignorowanie Nitro Classic (i śmieci) jest **${this.ignoreClassic ? 'włączone' : 'wyłączone'}**`);
@@ -161,7 +153,7 @@ ${this.lastMessage?.cleanContent?.slice(0, 1000)}`
                         let gifter = (await this.getGiftCreatorInfo(code)).user;
                         this.logChannel.send(`gifter: **@${gifter.username}#${gifter.discriminator}**`);
                     }
-                    this.logChannel.send("Wynik próby odebrania prezentu:\n\n" + JSON.stringify(gift, null, 2), {code: 'json', split: true});
+                    this.logChannel.send(Formatters.codeBlock('json', "Wynik próby odebrania prezentu:\n\n" + JSON.stringify(gift, null, 2)));
                     if(gift.id)
                         this.logChannel.send("@everyone");
                 });

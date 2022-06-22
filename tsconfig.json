@@ -13,6 +13,7 @@
       "strictNullChecks": false,
       "allowJs": true,
       "experimentalDecorators": true,
-      "noFallthroughCasesInSwitch": true
+      "noFallthroughCasesInSwitch": true,
+      "downlevelIteration": true
     }
   }
